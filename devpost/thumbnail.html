@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eureka Echoes — 16:9 Thumbnail Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #05050b;
+      color: #fff;
+      font-family: 'Inter', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #9333ea, #3b82f6);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(147, 51, 234, 0.4);
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.95; transform: translateY(-1px); }
+
+    /* 16:9 Canvas container */
+    #thumbnail-frame {
+      width: 1280px;
+      height: 720px;
+      position: relative;
+      background: radial-gradient(circle at 50% 40%, #1e1338 0%, #0d0a1c 45%, #05050b 100%);
+      overflow: hidden;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 100px rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transform-origin: top center;
+    }
+
+    /* Ambient Nebulae */
+    .orb-purple {
+      position: absolute;
+      top: 15%;
+      left: 15%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, transparent 70%);
+      filter: blur(60px);
+      pointer-events: none;
+    }
+    .orb-blue {
+      position: absolute;
+      bottom: 10%;
+      right: 15%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%);
+      filter: blur(70px);
+      pointer-events: none;
+    }
+    .orb-gold {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, transparent 65%);
+      filter: blur(50px);
+      pointer-events: none;
+    }
+
+    /* Constellation grid */
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    /* Central Content */
+    .content {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 50px 70px;
+    }
+
+    /* Top Badges */
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hackathon-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #f3e8ff;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #c084fc;
+      box-shadow: 0 0 10px #c084fc;
+    }
+    .track-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 6px 14px;
+      border-radius: 8px;
+      letter-spacing: 1px;
+    }
+
+    /* Hero Centerpiece */
+    .hero {
+      text-align: center;
+      margin-top: 10px;
+    }
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: 86px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      background: linear-gradient(180deg, #ffffff 20%, #e2d9f3 70%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 4px 30px rgba(168, 85, 247, 0.4));
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #f59e0b;
+      text-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+      margin-bottom: 16px;
+    }
+    .tagline {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 400;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Council Figures Row */
+    .council-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .figure-card {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px 18px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    .figure-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .figure-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .figure-domain {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Bottom Features Ribbon */
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 20px;
+    }
+    .metrics {
+      display: flex;
+      gap: 28px;
+    }
+    .metric-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .metric-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: #10b981;
+    }
+    .metric-lbl {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .tech-badges {
+      display: flex;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+    .tech-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 5px 12px;
+      border-radius: 6px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+  <div class="controls">
+    <button class="btn" onclick="downloadImage()">⬇ Download 1280x720 Thumbnail (PNG)</button>
+    <span style="font-size: 12px; color: rgba(255,255,255,0.4); font-family: monospace;">Standard 16:9 YouTube / Devpost Cover Ratio</span>
+  </div>
+
+  <div id="thumbnail-frame">
+    <!-- Ambient Nebulae -->
+    <div class="orb-purple"></div>
+    <div class="orb-blue"></div>
+    <div class="orb-gold"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="content">
+      <!-- Header Row -->
+      <div class="header-row">
+        <div class="hackathon-badge">
+          <span class="pulse-dot"></span>
+          EurekaDev Hackathon 2026
+        </div>
+        <div class="track-badge">
+          CODING + RESEARCH TRACK
+        </div>
+      </div>
+
+      <!-- Hero Main Title -->
+      <div class="hero">
+        <div class="subtitle">The Council of Polymaths</div>
+        <h1 class="title">EUREKA ECHOES</h1>
+        <p class="tagline">
+          History's greatest minds debate today's existential dilemmas — grounded in 25 verified treatises.
+        </p>
+
+        <!-- Council Figures Row -->
+        <div class="council-row">
+          <div class="figure-card">
+            <div class="figure-avatar" style="background: rgba(74, 144, 217, 0.3);">⚛️</div>
+            <div style="text-align: left;">
+              <div class="figure-name">Einstein</div>
+              <div class="figure-domain">Determinism & Spacetime</div>
+            </div>
+          </div>
+
+          <div class="figure-card">
+            <div class="figure-avatar" style="background: rgba(16, 185, 129, 0.3);">💻</div>
+            <div style="text-align: left;">
+              <div class="figure-name">Alan Turing</div>
+              <div class="figure-domain">Machine Intelligence</div>
+            </div>
+          </div>
+
+          <div class="figure-card">
+            <div class="figure-avatar" style="background: rgba(168, 85, 247, 0.3);">🔢</div>
+            <div style="text-align: left;">
+              <div class="figure-name">Ada Lovelace</div>
+              <div class="figure-domain">Analytical Computation</div>
+            </div>
+          </div>
+
+          <div class="figure-card">
+            <div class="figure-avatar" style="background: rgba(234, 179, 8, 0.3);">🏛️</div>
+            <div style="text-align: left;">
+              <div class="figure-name">Socrates</div>
+              <div class="figure-domain">Socratic Dialectic</div>
+            </div>
+          </div>
+
+          <div class="figure-card">
+            <div class="figure-avatar" style="background: rgba(13, 148, 136, 0.3);">🧬</div>
+            <div style="text-align: left;">
+              <div class="figure-name">Marie Curie</div>
+              <div class="figure-domain">Nuclear Physics</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Row -->
+      <div class="footer-row">
+        <div class="metrics">
+          <div class="metric-item">
+            <span class="metric-val">25</span>
+            <span class="metric-lbl">Historical Geniuses</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-val">98.2%</span>
+            <span class="metric-lbl">Citation Fidelity</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-val">Multi-Agent</span>
+            <span class="metric-lbl">Debate Arena</span>
+          </div>
+        </div>
+
+        <div class="tech-badges">
+          <span class="tech-pill">Google Gemini 2.5 Flash</span>
+          <span class="tech-pill">React 18</span>
+          <span class="tech-pill">Vite</span>
+          <span class="tech-pill">Tailwind</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function downloadImage() {
+      const frame = document.getElementById('thumbnail-frame');
+      html2canvas(frame, {
+        scale: 2, // 2x export for ultra-sharp 2560x1440 resolution
+        useCORS: true,
+        backgroundColor: '#05050b'
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'eureka-echoes-thumbnail.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+
+    // Auto-scale on small screens so it previews comfortably
+    function resizePreview() {
+      const frame = document.getElementById('thumbnail-frame');
+      const containerWidth = window.innerWidth - 40;
+      if (containerWidth < 1280) {
+        const scale = containerWidth / 1280;
+        frame.style.transform = `scale(${scale})`;
+        frame.style.marginBottom = `${-(720 * (1 - scale))}px`;
+      } else {
+        frame.style.transform = 'scale(1)';
+        frame.style.marginBottom = '0px';
+      }
+    }
+    window.addEventListener('resize', resizePreview);
+    resizePreview();
+  </script>
+</body>
+</html>
